@@ -1,12 +1,22 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from flask_login import UserMixin
+
+
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce.db'
 
 db = SQLAlchemy(app)
-
+CORS(app)
 #Modelagem
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key = True)
+    username = db.Column(db.String(20), nullable = False, unique = True)
+    password = db.Column(db.String(20), nullable = True)
+
 #Produto (id, name, price, description)
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key = True)
@@ -44,7 +54,7 @@ def delete_product(product_id):
 
 #Buscar produtos por ID
 @app.route('/api/products/<int:product_id>', methods = ["GET"])
-def get_product(product_id):
+def get_product_details(product_id):
     product = Product.query.get(product_id)
     if product:
         return jsonify({
@@ -54,6 +64,20 @@ def get_product(product_id):
             "description": product.description                  
         })
     return jsonify({'message': "Product not found!"}), 404
+
+#Listar Produto
+@app.route('/api/products', methods = ["GET"])
+def get_product():
+    products = Product.query.all()
+    return jsonify([
+            {
+                "id": p.id,
+                "name": p.name,
+                "price": p.price,
+                "description": p.description
+            }
+            for p in products
+    ])
 
 #Atualizar produto
 @app.route('/api/products/update/<int:product_id>', methods = ["PUT"])
